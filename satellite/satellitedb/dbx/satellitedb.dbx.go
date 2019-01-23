@@ -359,6 +359,13 @@ CREATE TABLE projects (
 	created_at timestamp with time zone NOT NULL,
 	PRIMARY KEY ( id )
 );
+CREATE TABLE uplinkDBs (
+	signature bytea NOT NULL,
+	serialnum text NOT NULL,
+	data bytea NOT NULL,
+	created_at timestamp with time zone NOT NULL,
+	PRIMARY KEY ( serialnum )
+);
 CREATE TABLE users (
 	id bytea NOT NULL,
 	first_name text NOT NULL,
@@ -540,6 +547,13 @@ CREATE TABLE projects (
 	description TEXT NOT NULL,
 	created_at TIMESTAMP NOT NULL,
 	PRIMARY KEY ( id )
+);
+CREATE TABLE uplinkDBs (
+	signature BLOB NOT NULL,
+	serialnum TEXT NOT NULL,
+	data BLOB NOT NULL,
+	created_at TIMESTAMP NOT NULL,
+	PRIMARY KEY ( serialnum )
 );
 CREATE TABLE users (
 	id BLOB NOT NULL,
@@ -1911,6 +1925,94 @@ func (f Project_CreatedAt_Field) value() interface{} {
 }
 
 func (Project_CreatedAt_Field) _Column() string { return "created_at" }
+
+type UplinkDB struct {
+	Signature []byte
+	Serialnum string
+	Data      []byte
+	CreatedAt time.Time
+}
+
+func (UplinkDB) _Table() string { return "uplinkDBs" }
+
+type UplinkDB_Update_Fields struct {
+}
+
+type UplinkDB_Signature_Field struct {
+	_set   bool
+	_null  bool
+	_value []byte
+}
+
+func UplinkDB_Signature(v []byte) UplinkDB_Signature_Field {
+	return UplinkDB_Signature_Field{_set: true, _value: v}
+}
+
+func (f UplinkDB_Signature_Field) value() interface{} {
+	if !f._set || f._null {
+		return nil
+	}
+	return f._value
+}
+
+func (UplinkDB_Signature_Field) _Column() string { return "signature" }
+
+type UplinkDB_Serialnum_Field struct {
+	_set   bool
+	_null  bool
+	_value string
+}
+
+func UplinkDB_Serialnum(v string) UplinkDB_Serialnum_Field {
+	return UplinkDB_Serialnum_Field{_set: true, _value: v}
+}
+
+func (f UplinkDB_Serialnum_Field) value() interface{} {
+	if !f._set || f._null {
+		return nil
+	}
+	return f._value
+}
+
+func (UplinkDB_Serialnum_Field) _Column() string { return "serialnum" }
+
+type UplinkDB_Data_Field struct {
+	_set   bool
+	_null  bool
+	_value []byte
+}
+
+func UplinkDB_Data(v []byte) UplinkDB_Data_Field {
+	return UplinkDB_Data_Field{_set: true, _value: v}
+}
+
+func (f UplinkDB_Data_Field) value() interface{} {
+	if !f._set || f._null {
+		return nil
+	}
+	return f._value
+}
+
+func (UplinkDB_Data_Field) _Column() string { return "data" }
+
+type UplinkDB_CreatedAt_Field struct {
+	_set   bool
+	_null  bool
+	_value time.Time
+}
+
+func UplinkDB_CreatedAt(v time.Time) UplinkDB_CreatedAt_Field {
+	return UplinkDB_CreatedAt_Field{_set: true, _value: v}
+}
+
+func (f UplinkDB_CreatedAt_Field) value() interface{} {
+	if !f._set || f._null {
+		return nil
+	}
+	return f._value
+}
+
+func (UplinkDB_CreatedAt_Field) _Column() string { return "created_at" }
 
 type User struct {
 	Id           []byte
@@ -3725,6 +3827,127 @@ func (obj *postgresImpl) All_BucketInfo_By_ProjectId_OrderBy_Asc_Name(ctx contex
 
 }
 
+func (obj *postgresImpl) Get_UplinkDB_By_Serialnum(ctx context.Context,
+	uplinkDB_serialnum UplinkDB_Serialnum_Field) (
+	uplinkDB *UplinkDB, err error) {
+
+	var __embed_stmt = __sqlbundle_Literal("SELECT uplinkDBs.signature, uplinkDBs.serialnum, uplinkDBs.data, uplinkDBs.created_at FROM uplinkDBs WHERE uplinkDBs.serialnum = ?")
+
+	var __values []interface{}
+	__values = append(__values, uplinkDB_serialnum.value())
+
+	var __stmt = __sqlbundle_Render(obj.dialect, __embed_stmt)
+	obj.logStmt(__stmt, __values...)
+
+	uplinkDB = &UplinkDB{}
+	err = obj.driver.QueryRow(__stmt, __values...).Scan(&uplinkDB.Signature, &uplinkDB.Serialnum, &uplinkDB.Data, &uplinkDB.CreatedAt)
+	if err != nil {
+		return nil, obj.makeErr(err)
+	}
+	return uplinkDB, nil
+
+}
+
+func (obj *postgresImpl) Limited_UplinkDB(ctx context.Context,
+	limit int, offset int64) (
+	rows []*UplinkDB, err error) {
+
+	var __embed_stmt = __sqlbundle_Literal("SELECT uplinkDBs.signature, uplinkDBs.serialnum, uplinkDBs.data, uplinkDBs.created_at FROM uplinkDBs LIMIT ? OFFSET ?")
+
+	var __values []interface{}
+	__values = append(__values)
+
+	__values = append(__values, limit, offset)
+
+	var __stmt = __sqlbundle_Render(obj.dialect, __embed_stmt)
+	obj.logStmt(__stmt, __values...)
+
+	__rows, err := obj.driver.Query(__stmt, __values...)
+	if err != nil {
+		return nil, obj.makeErr(err)
+	}
+	defer __rows.Close()
+
+	for __rows.Next() {
+		uplinkDB := &UplinkDB{}
+		err = __rows.Scan(&uplinkDB.Signature, &uplinkDB.Serialnum, &uplinkDB.Data, &uplinkDB.CreatedAt)
+		if err != nil {
+			return nil, obj.makeErr(err)
+		}
+		rows = append(rows, uplinkDB)
+	}
+	if err := __rows.Err(); err != nil {
+		return nil, obj.makeErr(err)
+	}
+	return rows, nil
+
+}
+
+func (obj *postgresImpl) All_UplinkDB(ctx context.Context) (
+	rows []*UplinkDB, err error) {
+
+	var __embed_stmt = __sqlbundle_Literal("SELECT uplinkDBs.signature, uplinkDBs.serialnum, uplinkDBs.data, uplinkDBs.created_at FROM uplinkDBs")
+
+	var __values []interface{}
+	__values = append(__values)
+
+	var __stmt = __sqlbundle_Render(obj.dialect, __embed_stmt)
+	obj.logStmt(__stmt, __values...)
+
+	__rows, err := obj.driver.Query(__stmt, __values...)
+	if err != nil {
+		return nil, obj.makeErr(err)
+	}
+	defer __rows.Close()
+
+	for __rows.Next() {
+		uplinkDB := &UplinkDB{}
+		err = __rows.Scan(&uplinkDB.Signature, &uplinkDB.Serialnum, &uplinkDB.Data, &uplinkDB.CreatedAt)
+		if err != nil {
+			return nil, obj.makeErr(err)
+		}
+		rows = append(rows, uplinkDB)
+	}
+	if err := __rows.Err(); err != nil {
+		return nil, obj.makeErr(err)
+	}
+	return rows, nil
+
+}
+
+func (obj *postgresImpl) All_UplinkDB_By_CreatedAt_Greater(ctx context.Context,
+	uplinkDB_created_at_greater UplinkDB_CreatedAt_Field) (
+	rows []*UplinkDB, err error) {
+
+	var __embed_stmt = __sqlbundle_Literal("SELECT uplinkDBs.signature, uplinkDBs.serialnum, uplinkDBs.data, uplinkDBs.created_at FROM uplinkDBs WHERE uplinkDBs.created_at > ?")
+
+	var __values []interface{}
+	__values = append(__values, uplinkDB_created_at_greater.value())
+
+	var __stmt = __sqlbundle_Render(obj.dialect, __embed_stmt)
+	obj.logStmt(__stmt, __values...)
+
+	__rows, err := obj.driver.Query(__stmt, __values...)
+	if err != nil {
+		return nil, obj.makeErr(err)
+	}
+	defer __rows.Close()
+
+	for __rows.Next() {
+		uplinkDB := &UplinkDB{}
+		err = __rows.Scan(&uplinkDB.Signature, &uplinkDB.Serialnum, &uplinkDB.Data, &uplinkDB.CreatedAt)
+		if err != nil {
+			return nil, obj.makeErr(err)
+		}
+		rows = append(rows, uplinkDB)
+	}
+	if err := __rows.Err(); err != nil {
+		return nil, obj.makeErr(err)
+	}
+	return rows, nil
+
+}
+
 func (obj *postgresImpl) Update_Irreparabledb_By_Segmentpath(ctx context.Context,
 	irreparabledb_segmentpath Irreparabledb_Segmentpath_Field,
 	update Irreparabledb_Update_Fields) (
@@ -4408,6 +4631,32 @@ func (obj *postgresImpl) Delete_BucketInfo_By_Name(ctx context.Context,
 
 }
 
+func (obj *postgresImpl) Delete_UplinkDB_By_Serialnum(ctx context.Context,
+	uplinkDB_serialnum UplinkDB_Serialnum_Field) (
+	deleted bool, err error) {
+
+	var __embed_stmt = __sqlbundle_Literal("DELETE FROM uplinkDBs WHERE uplinkDBs.serialnum = ?")
+
+	var __values []interface{}
+	__values = append(__values, uplinkDB_serialnum.value())
+
+	var __stmt = __sqlbundle_Render(obj.dialect, __embed_stmt)
+	obj.logStmt(__stmt, __values...)
+
+	__res, err := obj.driver.Exec(__stmt, __values...)
+	if err != nil {
+		return false, obj.makeErr(err)
+	}
+
+	__count, err := __res.RowsAffected()
+	if err != nil {
+		return false, obj.makeErr(err)
+	}
+
+	return __count > 0, nil
+
+}
+
 func (impl postgresImpl) isConstraintError(err error) (
 	constraint string, ok bool) {
 	if e, ok := err.(*pq.Error); ok {
@@ -4452,6 +4701,16 @@ func (obj *postgresImpl) deleteAll(ctx context.Context) (count int64, err error)
 	}
 	count += __count
 	__res, err = obj.driver.Exec("DELETE FROM users;")
+	if err != nil {
+		return 0, obj.makeErr(err)
+	}
+
+	__count, err = __res.RowsAffected()
+	if err != nil {
+		return 0, obj.makeErr(err)
+	}
+	count += __count
+	__res, err = obj.driver.Exec("DELETE FROM uplinkDBs;")
 	if err != nil {
 		return 0, obj.makeErr(err)
 	}
@@ -5821,6 +6080,127 @@ func (obj *sqlite3Impl) All_BucketInfo_By_ProjectId_OrderBy_Asc_Name(ctx context
 
 }
 
+func (obj *sqlite3Impl) Get_UplinkDB_By_Serialnum(ctx context.Context,
+	uplinkDB_serialnum UplinkDB_Serialnum_Field) (
+	uplinkDB *UplinkDB, err error) {
+
+	var __embed_stmt = __sqlbundle_Literal("SELECT uplinkDBs.signature, uplinkDBs.serialnum, uplinkDBs.data, uplinkDBs.created_at FROM uplinkDBs WHERE uplinkDBs.serialnum = ?")
+
+	var __values []interface{}
+	__values = append(__values, uplinkDB_serialnum.value())
+
+	var __stmt = __sqlbundle_Render(obj.dialect, __embed_stmt)
+	obj.logStmt(__stmt, __values...)
+
+	uplinkDB = &UplinkDB{}
+	err = obj.driver.QueryRow(__stmt, __values...).Scan(&uplinkDB.Signature, &uplinkDB.Serialnum, &uplinkDB.Data, &uplinkDB.CreatedAt)
+	if err != nil {
+		return nil, obj.makeErr(err)
+	}
+	return uplinkDB, nil
+
+}
+
+func (obj *sqlite3Impl) Limited_UplinkDB(ctx context.Context,
+	limit int, offset int64) (
+	rows []*UplinkDB, err error) {
+
+	var __embed_stmt = __sqlbundle_Literal("SELECT uplinkDBs.signature, uplinkDBs.serialnum, uplinkDBs.data, uplinkDBs.created_at FROM uplinkDBs LIMIT ? OFFSET ?")
+
+	var __values []interface{}
+	__values = append(__values)
+
+	__values = append(__values, limit, offset)
+
+	var __stmt = __sqlbundle_Render(obj.dialect, __embed_stmt)
+	obj.logStmt(__stmt, __values...)
+
+	__rows, err := obj.driver.Query(__stmt, __values...)
+	if err != nil {
+		return nil, obj.makeErr(err)
+	}
+	defer __rows.Close()
+
+	for __rows.Next() {
+		uplinkDB := &UplinkDB{}
+		err = __rows.Scan(&uplinkDB.Signature, &uplinkDB.Serialnum, &uplinkDB.Data, &uplinkDB.CreatedAt)
+		if err != nil {
+			return nil, obj.makeErr(err)
+		}
+		rows = append(rows, uplinkDB)
+	}
+	if err := __rows.Err(); err != nil {
+		return nil, obj.makeErr(err)
+	}
+	return rows, nil
+
+}
+
+func (obj *sqlite3Impl) All_UplinkDB(ctx context.Context) (
+	rows []*UplinkDB, err error) {
+
+	var __embed_stmt = __sqlbundle_Literal("SELECT uplinkDBs.signature, uplinkDBs.serialnum, uplinkDBs.data, uplinkDBs.created_at FROM uplinkDBs")
+
+	var __values []interface{}
+	__values = append(__values)
+
+	var __stmt = __sqlbundle_Render(obj.dialect, __embed_stmt)
+	obj.logStmt(__stmt, __values...)
+
+	__rows, err := obj.driver.Query(__stmt, __values...)
+	if err != nil {
+		return nil, obj.makeErr(err)
+	}
+	defer __rows.Close()
+
+	for __rows.Next() {
+		uplinkDB := &UplinkDB{}
+		err = __rows.Scan(&uplinkDB.Signature, &uplinkDB.Serialnum, &uplinkDB.Data, &uplinkDB.CreatedAt)
+		if err != nil {
+			return nil, obj.makeErr(err)
+		}
+		rows = append(rows, uplinkDB)
+	}
+	if err := __rows.Err(); err != nil {
+		return nil, obj.makeErr(err)
+	}
+	return rows, nil
+
+}
+
+func (obj *sqlite3Impl) All_UplinkDB_By_CreatedAt_Greater(ctx context.Context,
+	uplinkDB_created_at_greater UplinkDB_CreatedAt_Field) (
+	rows []*UplinkDB, err error) {
+
+	var __embed_stmt = __sqlbundle_Literal("SELECT uplinkDBs.signature, uplinkDBs.serialnum, uplinkDBs.data, uplinkDBs.created_at FROM uplinkDBs WHERE uplinkDBs.created_at > ?")
+
+	var __values []interface{}
+	__values = append(__values, uplinkDB_created_at_greater.value())
+
+	var __stmt = __sqlbundle_Render(obj.dialect, __embed_stmt)
+	obj.logStmt(__stmt, __values...)
+
+	__rows, err := obj.driver.Query(__stmt, __values...)
+	if err != nil {
+		return nil, obj.makeErr(err)
+	}
+	defer __rows.Close()
+
+	for __rows.Next() {
+		uplinkDB := &UplinkDB{}
+		err = __rows.Scan(&uplinkDB.Signature, &uplinkDB.Serialnum, &uplinkDB.Data, &uplinkDB.CreatedAt)
+		if err != nil {
+			return nil, obj.makeErr(err)
+		}
+		rows = append(rows, uplinkDB)
+	}
+	if err := __rows.Err(); err != nil {
+		return nil, obj.makeErr(err)
+	}
+	return rows, nil
+
+}
+
 func (obj *sqlite3Impl) Update_Irreparabledb_By_Segmentpath(ctx context.Context,
 	irreparabledb_segmentpath Irreparabledb_Segmentpath_Field,
 	update Irreparabledb_Update_Fields) (
@@ -6574,6 +6954,32 @@ func (obj *sqlite3Impl) Delete_BucketInfo_By_Name(ctx context.Context,
 
 }
 
+func (obj *sqlite3Impl) Delete_UplinkDB_By_Serialnum(ctx context.Context,
+	uplinkDB_serialnum UplinkDB_Serialnum_Field) (
+	deleted bool, err error) {
+
+	var __embed_stmt = __sqlbundle_Literal("DELETE FROM uplinkDBs WHERE uplinkDBs.serialnum = ?")
+
+	var __values []interface{}
+	__values = append(__values, uplinkDB_serialnum.value())
+
+	var __stmt = __sqlbundle_Render(obj.dialect, __embed_stmt)
+	obj.logStmt(__stmt, __values...)
+
+	__res, err := obj.driver.Exec(__stmt, __values...)
+	if err != nil {
+		return false, obj.makeErr(err)
+	}
+
+	__count, err := __res.RowsAffected()
+	if err != nil {
+		return false, obj.makeErr(err)
+	}
+
+	return __count > 0, nil
+
+}
+
 func (obj *sqlite3Impl) getLastBwagreement(ctx context.Context,
 	pk int64) (
 	bwagreement *Bwagreement, err error) {
@@ -6808,6 +7214,24 @@ func (obj *sqlite3Impl) getLastBucketInfo(ctx context.Context,
 
 }
 
+func (obj *sqlite3Impl) getLastUplinkDB(ctx context.Context,
+	pk int64) (
+	uplinkDB *UplinkDB, err error) {
+
+	var __embed_stmt = __sqlbundle_Literal("SELECT uplinkDBs.signature, uplinkDBs.serialnum, uplinkDBs.data, uplinkDBs.created_at FROM uplinkDBs WHERE _rowid_ = ?")
+
+	var __stmt = __sqlbundle_Render(obj.dialect, __embed_stmt)
+	obj.logStmt(__stmt, pk)
+
+	uplinkDB = &UplinkDB{}
+	err = obj.driver.QueryRow(__stmt, pk).Scan(&uplinkDB.Signature, &uplinkDB.Serialnum, &uplinkDB.Data, &uplinkDB.CreatedAt)
+	if err != nil {
+		return nil, obj.makeErr(err)
+	}
+	return uplinkDB, nil
+
+}
+
 func (impl sqlite3Impl) isConstraintError(err error) (
 	constraint string, ok bool) {
 	if e, ok := err.(sqlite3.Error); ok {
@@ -6857,6 +7281,16 @@ func (obj *sqlite3Impl) deleteAll(ctx context.Context) (count int64, err error) 
 	}
 	count += __count
 	__res, err = obj.driver.Exec("DELETE FROM users;")
+	if err != nil {
+		return 0, obj.makeErr(err)
+	}
+
+	__count, err = __res.RowsAffected()
+	if err != nil {
+		return 0, obj.makeErr(err)
+	}
+	count += __count
+	__res, err = obj.driver.Exec("DELETE FROM uplinkDBs;")
 	if err != nil {
 		return 0, obj.makeErr(err)
 	}
@@ -7120,6 +7554,25 @@ func (rx *Rx) All_Project_By_ProjectMember_MemberId_OrderBy_Asc_Project_Name(ctx
 	return tx.All_Project_By_ProjectMember_MemberId_OrderBy_Asc_Project_Name(ctx, project_member_member_id)
 }
 
+func (rx *Rx) All_UplinkDB(ctx context.Context) (
+	rows []*UplinkDB, err error) {
+	var tx *Tx
+	if tx, err = rx.getTx(ctx); err != nil {
+		return
+	}
+	return tx.All_UplinkDB(ctx)
+}
+
+func (rx *Rx) All_UplinkDB_By_CreatedAt_Greater(ctx context.Context,
+	uplinkDB_created_at_greater UplinkDB_CreatedAt_Field) (
+	rows []*UplinkDB, err error) {
+	var tx *Tx
+	if tx, err = rx.getTx(ctx); err != nil {
+		return
+	}
+	return tx.All_UplinkDB_By_CreatedAt_Greater(ctx, uplinkDB_created_at_greater)
+}
+
 func (rx *Rx) Create_AccountingRaw(ctx context.Context,
 	accounting_raw_node_id AccountingRaw_NodeId_Field,
 	accounting_raw_interval_end_time AccountingRaw_IntervalEndTime_Field,
@@ -7299,6 +7752,19 @@ func (rx *Rx) Create_ProjectMember(ctx context.Context,
 
 }
 
+func (rx *Rx) Create_UplinkDB(ctx context.Context,
+	uplinkDB_signature UplinkDB_Signature_Field,
+	uplinkDB_serialnum UplinkDB_Serialnum_Field,
+	uplinkDB_data UplinkDB_Data_Field) (
+	uplinkDB *UplinkDB, err error) {
+	var tx *Tx
+	if tx, err = rx.getTx(ctx); err != nil {
+		return
+	}
+	return tx.Create_UplinkDB(ctx, uplinkDB_signature, uplinkDB_serialnum, uplinkDB_data)
+
+}
+
 func (rx *Rx) Create_User(ctx context.Context,
 	user_id User_Id_Field,
 	user_first_name User_FirstName_Field,
@@ -7413,6 +7879,16 @@ func (rx *Rx) Delete_Project_By_Id(ctx context.Context,
 		return
 	}
 	return tx.Delete_Project_By_Id(ctx, project_id)
+}
+
+func (rx *Rx) Delete_UplinkDB_By_Serialnum(ctx context.Context,
+	uplinkDB_serialnum UplinkDB_Serialnum_Field) (
+	deleted bool, err error) {
+	var tx *Tx
+	if tx, err = rx.getTx(ctx); err != nil {
+		return
+	}
+	return tx.Delete_UplinkDB_By_Serialnum(ctx, uplinkDB_serialnum)
 }
 
 func (rx *Rx) Delete_User_By_Id(ctx context.Context,
@@ -7544,6 +8020,16 @@ func (rx *Rx) Get_Project_By_Id(ctx context.Context,
 	return tx.Get_Project_By_Id(ctx, project_id)
 }
 
+func (rx *Rx) Get_UplinkDB_By_Serialnum(ctx context.Context,
+	uplinkDB_serialnum UplinkDB_Serialnum_Field) (
+	uplinkDB *UplinkDB, err error) {
+	var tx *Tx
+	if tx, err = rx.getTx(ctx); err != nil {
+		return
+	}
+	return tx.Get_UplinkDB_By_Serialnum(ctx, uplinkDB_serialnum)
+}
+
 func (rx *Rx) Get_User_By_Email(ctx context.Context,
 	user_email User_Email_Field) (
 	user *User, err error) {
@@ -7604,6 +8090,16 @@ func (rx *Rx) Limited_ProjectMember_By_ProjectId(ctx context.Context,
 		return
 	}
 	return tx.Limited_ProjectMember_By_ProjectId(ctx, project_member_project_id, limit, offset)
+}
+
+func (rx *Rx) Limited_UplinkDB(ctx context.Context,
+	limit int, offset int64) (
+	rows []*UplinkDB, err error) {
+	var tx *Tx
+	if tx, err = rx.getTx(ctx); err != nil {
+		return
+	}
+	return tx.Limited_UplinkDB(ctx, limit, offset)
 }
 
 func (rx *Rx) Update_AccountingTimestamps_By_Name(ctx context.Context,
@@ -7729,6 +8225,13 @@ type Methods interface {
 		project_member_member_id ProjectMember_MemberId_Field) (
 		rows []*Project, err error)
 
+	All_UplinkDB(ctx context.Context) (
+		rows []*UplinkDB, err error)
+
+	All_UplinkDB_By_CreatedAt_Greater(ctx context.Context,
+		uplinkDB_created_at_greater UplinkDB_CreatedAt_Field) (
+		rows []*UplinkDB, err error)
+
 	Create_AccountingRaw(ctx context.Context,
 		accounting_raw_node_id AccountingRaw_NodeId_Field,
 		accounting_raw_interval_end_time AccountingRaw_IntervalEndTime_Field,
@@ -7824,6 +8327,12 @@ type Methods interface {
 		project_member_project_id ProjectMember_ProjectId_Field) (
 		project_member *ProjectMember, err error)
 
+	Create_UplinkDB(ctx context.Context,
+		uplinkDB_signature UplinkDB_Signature_Field,
+		uplinkDB_serialnum UplinkDB_Serialnum_Field,
+		uplinkDB_data UplinkDB_Data_Field) (
+		uplinkDB *UplinkDB, err error)
+
 	Create_User(ctx context.Context,
 		user_id User_Id_Field,
 		user_first_name User_FirstName_Field,
@@ -7871,6 +8380,10 @@ type Methods interface {
 
 	Delete_Project_By_Id(ctx context.Context,
 		project_id Project_Id_Field) (
+		deleted bool, err error)
+
+	Delete_UplinkDB_By_Serialnum(ctx context.Context,
+		uplinkDB_serialnum UplinkDB_Serialnum_Field) (
 		deleted bool, err error)
 
 	Delete_User_By_Id(ctx context.Context,
@@ -7924,6 +8437,10 @@ type Methods interface {
 		project_id Project_Id_Field) (
 		project *Project, err error)
 
+	Get_UplinkDB_By_Serialnum(ctx context.Context,
+		uplinkDB_serialnum UplinkDB_Serialnum_Field) (
+		uplinkDB *UplinkDB, err error)
+
 	Get_User_By_Email(ctx context.Context,
 		user_email User_Email_Field) (
 		user *User, err error)
@@ -7949,6 +8466,10 @@ type Methods interface {
 		project_member_project_id ProjectMember_ProjectId_Field,
 		limit int, offset int64) (
 		rows []*ProjectMember, err error)
+
+	Limited_UplinkDB(ctx context.Context,
+		limit int, offset int64) (
+		rows []*UplinkDB, err error)
 
 	Update_AccountingTimestamps_By_Name(ctx context.Context,
 		accounting_timestamps_name AccountingTimestamps_Name_Field,

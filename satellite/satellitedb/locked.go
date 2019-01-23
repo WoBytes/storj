@@ -20,6 +20,7 @@ import (
 	"storj.io/storj/pkg/pb"
 	"storj.io/storj/pkg/statdb"
 	"storj.io/storj/pkg/storj"
+	"storj.io/storj/pkg/uplinkdb"
 	"storj.io/storj/satellite"
 	"storj.io/storj/satellite/console"
 )
@@ -76,6 +77,13 @@ func (m *lockedAccounting) QueryPaymentInfo(ctx context.Context, start time.Time
 	return m.db.QueryPaymentInfo(ctx, start, end)
 }
 
+// QueryPaymentInfo queries StatDB, Accounting Rollup on nodeID
+func (m *lockedAccounting) QueryPaymentInfo(ctx context.Context, start time.Time, end time.Time) ([]*accounting.CSVRow, error) {
+	m.Lock()
+	defer m.Unlock()
+	return m.db.QueryPaymentInfo(ctx, start, end)
+}
+
 // SaveAtRestRaw records raw tallies of at-rest-data.
 func (m *lockedAccounting) SaveAtRestRaw(ctx context.Context, latestTally time.Time, nodeData map[storj.NodeID]float64) error {
 	m.Lock()
@@ -95,6 +103,13 @@ func (m *lockedAccounting) SaveRollup(ctx context.Context, latestTally time.Time
 	m.Lock()
 	defer m.Unlock()
 	return m.db.SaveRollup(ctx, latestTally, stats)
+}
+
+// Adds records to rollup for testing (TODO: remove before merge)
+func (m *lockedAccounting) TestPayments(ctx context.Context) error {
+	m.Lock()
+	defer m.Unlock()
+	return m.db.TestPayments(ctx)
 }
 
 // BandwidthAgreement returns database for storing bandwidth agreements
@@ -637,4 +652,45 @@ func (m *lockedStatDB) UpdateUptime(ctx context.Context, nodeID storj.NodeID, is
 	m.Lock()
 	defer m.Unlock()
 	return m.db.UpdateUptime(ctx, nodeID, isUp)
+}
+
+// UplinkDB returns database for storing bandwidth agreements
+func (m *locked) UplinkDB() uplinkdb.DB {
+	m.Lock()
+	defer m.Unlock()
+	return &lockedUplinkDB{m.Locker, m.db.UplinkDB()}
+}
+
+// lockedUplinkDB implements locking wrapper for uplinkdb.DB
+type lockedUplinkDB struct {
+	sync.Locker
+	db uplinkdb.DB
+}
+
+// CreateAgreement adds a new bandwidth agreement.
+func (m *lockedUplinkDB) CreateAgreement(ctx context.Context, a1 string, a2 uplinkdb.Agreement) error {
+	m.Lock()
+	defer m.Unlock()
+	return m.db.CreateAgreement(ctx, a1, a2)
+}
+
+// GetAgreements gets all bandwidth agreements.
+func (m *lockedUplinkDB) GetAgreements(ctx context.Context) ([]uplinkdb.Agreement, error) {
+	m.Lock()
+	defer m.Unlock()
+	return m.db.GetAgreements(ctx)
+}
+
+// GetAgreementsSince gets all bandwidth agreements since specific time.
+func (m *lockedUplinkDB) GetAgreementsSince(ctx context.Context, a1 time.Time) ([]uplinkdb.Agreement, error) {
+	m.Lock()
+	defer m.Unlock()
+	return m.db.GetAgreementsSince(ctx, a1)
+}
+
+// GetSignature gets the public key of uplink corresponding to serial number
+func (m *lockedUplinkDB) GetSignature(ctx context.Context, serialnum string) (*uplinkdb.Agreement, error) {
+	m.Lock()
+	defer m.Unlock()
+	return m.db.GetSignature(ctx, serialnum)
 }

@@ -358,3 +358,35 @@ read all (
     where bucket_info.project_id = ?
     orderby asc bucket_info.name
 )
+
+//--- uplinkDB ---//
+
+model uplinkDB (
+	key serialnum
+
+	field signature  blob		//--uplink public key--//
+	field serialnum  text		//--uplink cheque ser num--//
+	field data       blob		//--uplink id RFU --//
+	field created_at timestamp ( autoinsert )
+)
+
+create uplinkDB ( )
+delete uplinkDB ( where uplinkDB.serialnum = ? )
+
+read one (
+	select uplinkDB
+	where  uplinkDB.serialnum = ?
+)
+
+read limitoffset (
+	select uplinkDB
+)
+
+read all (
+	select uplinkDB
+)
+
+read all (
+	select uplinkDB
+	where  uplinkDB.created_at > ?
+)
