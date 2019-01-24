@@ -1,7 +1,7 @@
 // Copyright (C) 2019 Storj Labs, Inc.
 // See LICENSE for copying information.
 
-package pointerdb
+package pointerdb_test
 
 import (
 	"context"
@@ -24,7 +24,9 @@ import (
 	"storj.io/storj/internal/testidentity"
 	"storj.io/storj/pkg/auth"
 	"storj.io/storj/pkg/pb"
+	"storj.io/storj/pkg/pointerdb"
 	"storj.io/storj/pkg/storage/meta"
+	"storj.io/storj/satellite/satellitedb"
 	"storj.io/storj/storage"
 	"storj.io/storj/storage/teststore"
 )
@@ -45,8 +47,8 @@ func TestServicePut(t *testing.T) {
 		errTag := fmt.Sprintf("Test case #%d", i)
 
 		db := teststore.New()
-		service := NewService(zap.NewNop(), db)
-		s := Server{service: service, logger: zap.NewNop()}
+		service := pointerdb.NewService(zap.NewNop(), db)
+		s := pointerdb.NewServer(zap.NewNop(), service, nil, nil, pointerdb.Config{}, nil)
 
 		path := "a/b/c"
 		pr := pb.Pointer{}
@@ -79,6 +81,15 @@ func TestServiceGet(t *testing.T) {
 
 	info := credentials.TLSInfo{State: tls.ConnectionState{PeerCertificates: peerCertificates}}
 
+	// creating in-memory db and opening connection
+	satdb, err := satellitedb.NewInMemory()
+	defer func() {
+		err = satdb.Close()
+		assert.NoError(t, err)
+	}()
+	err = satdb.CreateTables()
+	assert.NoError(t, err)
+
 	for i, tt := range []struct {
 		apiKey    []byte
 		err       error
@@ -94,9 +105,9 @@ func TestServiceGet(t *testing.T) {
 		errTag := fmt.Sprintf("Test case #%d", i)
 
 		db := teststore.New()
-		service := NewService(zap.NewNop(), db)
-		allocation := NewAllocationSigner(identity, 45)
-		s := NewServer(zap.NewNop(), service, allocation, nil, Config{}, identity)
+		service := pointerdb.NewService(zap.NewNop(), db)
+		allocation := pointerdb.NewAllocationSigner(identity, 45, satdb.UplinkDB())
+		s := pointerdb.NewServer(zap.NewNop(), service, allocation, nil, pointerdb.Config{}, identity)
 
 		path := "a/b/c"
 
@@ -145,8 +156,8 @@ func TestServiceDelete(t *testing.T) {
 
 		db := teststore.New()
 		_ = db.Put(storage.Key(path), storage.Value("hello"))
-		service := NewService(zap.NewNop(), db)
-		s := Server{service: service, logger: zap.NewNop()}
+		service := pointerdb.NewService(zap.NewNop(), db)
+		s := pointerdb.NewServer(zap.NewNop(), service, nil, nil, pointerdb.Config{}, nil)
 
 		if tt.err != nil {
 			db.ForceError++
@@ -165,8 +176,8 @@ func TestServiceDelete(t *testing.T) {
 
 func TestServiceList(t *testing.T) {
 	db := teststore.New()
-	service := NewService(zap.NewNop(), db)
-	server := Server{service: service, logger: zap.NewNop()}
+	service := pointerdb.NewService(zap.NewNop(), db)
+	server := pointerdb.NewServer(zap.NewNop(), service, nil, nil, pointerdb.Config{}, nil)
 
 	pointer := &pb.Pointer{}
 	pointer.CreationDate = ptypes.TimestampNow()
