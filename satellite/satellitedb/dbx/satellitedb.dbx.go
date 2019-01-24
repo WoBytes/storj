@@ -2975,6 +2975,32 @@ func (obj *postgresImpl) Create_BucketInfo(ctx context.Context,
 
 }
 
+func (obj *postgresImpl) Create_UplinkDB(ctx context.Context,
+	uplinkDB_signature UplinkDB_Signature_Field,
+	uplinkDB_serialnum UplinkDB_Serialnum_Field,
+	uplinkDB_data UplinkDB_Data_Field) (
+	uplinkDB *UplinkDB, err error) {
+
+	__now := obj.db.Hooks.Now().UTC()
+	__signature_val := uplinkDB_signature.value()
+	__serialnum_val := uplinkDB_serialnum.value()
+	__data_val := uplinkDB_data.value()
+	__created_at_val := __now
+
+	var __embed_stmt = __sqlbundle_Literal("INSERT INTO uplinkDBs ( signature, serialnum, data, created_at ) VALUES ( ?, ?, ?, ? ) RETURNING uplinkDBs.signature, uplinkDBs.serialnum, uplinkDBs.data, uplinkDBs.created_at")
+
+	var __stmt = __sqlbundle_Render(obj.dialect, __embed_stmt)
+	obj.logStmt(__stmt, __signature_val, __serialnum_val, __data_val, __created_at_val)
+
+	uplinkDB = &UplinkDB{}
+	err = obj.driver.QueryRow(__stmt, __signature_val, __serialnum_val, __data_val, __created_at_val).Scan(&uplinkDB.Signature, &uplinkDB.Serialnum, &uplinkDB.Data, &uplinkDB.CreatedAt)
+	if err != nil {
+		return nil, obj.makeErr(err)
+	}
+	return uplinkDB, nil
+
+}
+
 func (obj *postgresImpl) Limited_Bwagreement(ctx context.Context,
 	limit int, offset int64) (
 	rows []*Bwagreement, err error) {
@@ -5225,6 +5251,35 @@ func (obj *sqlite3Impl) Create_BucketInfo(ctx context.Context,
 		return nil, obj.makeErr(err)
 	}
 	return obj.getLastBucketInfo(ctx, __pk)
+
+}
+
+func (obj *sqlite3Impl) Create_UplinkDB(ctx context.Context,
+	uplinkDB_signature UplinkDB_Signature_Field,
+	uplinkDB_serialnum UplinkDB_Serialnum_Field,
+	uplinkDB_data UplinkDB_Data_Field) (
+	uplinkDB *UplinkDB, err error) {
+
+	__now := obj.db.Hooks.Now().UTC()
+	__signature_val := uplinkDB_signature.value()
+	__serialnum_val := uplinkDB_serialnum.value()
+	__data_val := uplinkDB_data.value()
+	__created_at_val := __now
+
+	var __embed_stmt = __sqlbundle_Literal("INSERT INTO uplinkDBs ( signature, serialnum, data, created_at ) VALUES ( ?, ?, ?, ? )")
+
+	var __stmt = __sqlbundle_Render(obj.dialect, __embed_stmt)
+	obj.logStmt(__stmt, __signature_val, __serialnum_val, __data_val, __created_at_val)
+
+	__res, err := obj.driver.Exec(__stmt, __signature_val, __serialnum_val, __data_val, __created_at_val)
+	if err != nil {
+		return nil, obj.makeErr(err)
+	}
+	__pk, err := __res.LastInsertId()
+	if err != nil {
+		return nil, obj.makeErr(err)
+	}
+	return obj.getLastUplinkDB(ctx, __pk)
 
 }
 

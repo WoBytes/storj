@@ -40,22 +40,21 @@ func (allocation *AllocationSigner) PayerBandwidthAllocation(ctx context.Context
 		return nil, Error.New("missing peer identity")
 	}
 
+	serialNum, err := uuid.New()
+	if err != nil {
+		return nil, err
+	}
+	created := time.Now().Unix()
+	// convert ttl from days to seconds
+	ttl := allocation.bwExpiration
+	ttl *= 86400
+
 	pk, ok := peerIdentity.Leaf.PublicKey.(*ecdsa.PublicKey)
 	if !ok {
 		return nil, peertls.ErrUnsupportedKey.New("%T", peerIdentity.Leaf.PublicKey)
 	}
 
 	pubbytes, err := x509.MarshalPKIXPublicKey(pk)
-	if err != nil {
-		return nil, err
-	}
-
-	created := time.Now().Unix()
-	// convert ttl from days to seconds
-	ttl := allocation.bwExpiration
-	ttl *= 86400
-
-	serialNum, err := uuid.New()
 	if err != nil {
 		return nil, err
 	}
@@ -74,6 +73,7 @@ func (allocation *AllocationSigner) PayerBandwidthAllocation(ctx context.Context
 		Action:            action,
 		SerialNumber:      serialNum.String(),
 	}
+
 	if err := auth.SignMessage(pba, *allocation.satelliteIdentity); err != nil {
 		return nil, err
 	}

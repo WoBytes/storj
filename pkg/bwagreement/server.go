@@ -91,6 +91,17 @@ func (s *Server) BandwidthAgreements(ctx context.Context, rba *pb.RenterBandwidt
 	if err := auth.VerifyMsg(rba, pba.UplinkId); err != nil {
 		return reply, pb.ErrRenter.Wrap(err)
 	}
+
+	// Get renter's public key from stored uplinkdb agreement table
+	uplinkInfo, err := s.uplinkdb.GetSignature(ctx, pba.GetSerialNumber())
+	if err != nil {
+		return nil, err
+	}
+
+	//If all is good, the signature bytes passed (via pba, as part of bw agreement) and
+	//read from uplinkdb table should be SAME. That is why
+	//copy the uplink's pub key from the uplinkdb table.
+	pba.Signature = uplinkInfo.Signature
 	if err := auth.VerifyMsg(&pba, pba.SatelliteId); err != nil {
 		return reply, pb.ErrPayer.Wrap(err)
 	}
@@ -107,62 +118,4 @@ func (s *Server) BandwidthAgreements(ctx context.Context, rba *pb.RenterBandwidt
 	reply.Status = pb.AgreementsSummary_OK
 	s.logger.Debug("Stored Agreement...")
 	return reply, nil
-}
-
-func (s *Server) verifySignature(ctx context.Context, ba *pb.RenterBandwidthAllocation) error {
-	// // TODO(security): detect replay attacks
-
-	// //Deserealize RenterBandwidthAllocation.GetData() so we can get public key
-	// rbad := &pb.RenterBandwidthAllocation{}
-	// if err := proto.Unmarshal(ba.GetData(), rbad); err != nil {
-	// 	return Error.New("Failed to unmarshal RenterBandwidthAllocation: %+v", err)
-	// }
-
-	// pba := rbad.GetPayerAllocation()
-	// pbad := &pb.PayerBandwidthAllocation_Data{}
-	// if err := proto.Unmarshal(pba.GetData(), pbad); err != nil {
-	// 	return Error.New("Failed to unmarshal PayerBandwidthAllocation: %+v", err)
-	// }
-
-	// // Get renter's public key from uplink agreement db
-	// uplinkInfo, err := s.uplinkdb.GetSignature(ctx, pbad.GetSerialNumber())
-	// if err != nil {
-	// 	return err
-	// }
-
-	// pubkey, err := x509.ParsePKIXPublicKey(uplinkInfo.Signature)
-	// if err != nil {
-	// 	return Error.New("Failed to extract Public Key from RenterBandwidthAllocation: %+v", err)
-	// }
-
-	// // Typecast public key
-	// k, ok := pubkey.(*ecdsa.PublicKey)
-	// if !ok {
-	// 	return peertls.ErrUnsupportedKey.New("%T", pubkey)
-	// }
-
-	// signatureLength := k.Curve.Params().P.BitLen() / 8
-	// if len(ba.GetSignature()) < signatureLength {
-	// 	return Error.New("Invalid Renter's Signature Length")
-	// }
-	// // verify Renter's (uplink) signature
-	// if ok := cryptopasta.Verify(ba.GetData(), ba.GetSignature(), k); !ok {
-	// 	return Error.New("Failed to verify Renter's Signature")
-	// }
-
-	// // satellite public key
-	// k, ok = s.pkey.(*ecdsa.PublicKey)
-	// if !ok {
-	// 	return peertls.ErrUnsupportedKey.New("%T", s.pkey)
-	// }
-
-	// signatureLength = k.Curve.Params().P.BitLen() / 8
-	// if len(rbad.GetPayerAllocation().GetSignature()) < signatureLength {
-	// 	return Error.New("Inavalid Payer's Signature Length")
-	// }
-	// // verify Payer's (satellite) signature
-	// if ok := cryptopasta.Verify(rbad.GetPayerAllocation().GetData(), rbad.GetPayerAllocation().GetSignature(), k); !ok {
-	// 	return Error.New("Failed to verify Payer's Signature")
-	// }
-	return nil
 }

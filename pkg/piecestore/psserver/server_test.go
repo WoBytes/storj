@@ -34,6 +34,7 @@ import (
 	"storj.io/storj/pkg/piecestore/psserver/psdb"
 	"storj.io/storj/pkg/server"
 	"storj.io/storj/pkg/storj"
+	"storj.io/storj/satellite/satellitedb"
 )
 
 func TestPiece(t *testing.T) {
@@ -123,6 +124,11 @@ func TestPiece(t *testing.T) {
 
 func TestRetrieve(t *testing.T) {
 	ctx := testcontext.New(t)
+	satdb, err := satellitedb.NewInMemory()
+	assert.NoError(t, err)
+
+	assert.NoError(t, satdb.CreateTables())
+	defer ctx.Check(satdb.Close)
 	defer ctx.Cleanup()
 
 	snID, upID := newTestID(ctx, t), newTestID(ctx, t)
@@ -232,7 +238,7 @@ func TestRetrieve(t *testing.T) {
 			err = stream.Send(&pb.PieceRetrieval{PieceData: &pb.PieceRetrieval_PieceData{Id: tt.id, PieceSize: tt.reqSize, Offset: tt.offset}})
 			require.NoError(t, err)
 
-			pba, err := testbwagreement.GeneratePayerBandwidthAllocation(pb.BandwidthAction_GET, snID, upID, time.Hour)
+			pba, err := testbwagreement.GeneratePayerBandwidthAllocation(satdb.UplinkDB(), pb.BandwidthAction_GET, snID, upID, time.Hour)
 			require.NoError(t, err)
 
 			totalAllocated := int64(0)
@@ -276,6 +282,11 @@ func TestRetrieve(t *testing.T) {
 
 func TestStore(t *testing.T) {
 	ctx := testcontext.New(t)
+	satdb, err := satellitedb.NewInMemory()
+	assert.NoError(t, err)
+
+	assert.NoError(t, satdb.CreateTables())
+	defer ctx.Check(satdb.Close)
 	defer ctx.Cleanup()
 
 	satID := newTestID(ctx, t)
@@ -336,7 +347,7 @@ func TestStore(t *testing.T) {
 			err = stream.Send(&pb.PieceStore{PieceData: &pb.PieceStore_PieceData{Id: tt.id, ExpirationUnixSec: tt.ttl}})
 			require.NoError(t, err)
 			// Send Bandwidth Allocation Data
-			pba, err := testbwagreement.GeneratePayerBandwidthAllocation(pb.BandwidthAction_PUT, snID, upID, time.Hour)
+			pba, err := testbwagreement.GeneratePayerBandwidthAllocation(satdb.UplinkDB(), pb.BandwidthAction_PUT, snID, upID, time.Hour)
 			require.NoError(t, err)
 			rba, err := testbwagreement.GenerateRenterBandwidthAllocation(pba, snID.ID, upID, tt.totalReceived)
 			require.NoError(t, err)
@@ -389,6 +400,11 @@ func TestStore(t *testing.T) {
 
 func TestPbaValidation(t *testing.T) {
 	ctx := testcontext.New(t)
+	satdb, err := satellitedb.NewInMemory()
+	assert.NoError(t, err)
+
+	assert.NoError(t, satdb.CreateTables())
+	defer ctx.Check(satdb.Close)
 	snID, upID := newTestID(ctx, t), newTestID(ctx, t)
 	satID1, satID2, satID3 := newTestID(ctx, t), newTestID(ctx, t), newTestID(ctx, t)
 	defer ctx.Cleanup()
@@ -445,7 +461,7 @@ func TestPbaValidation(t *testing.T) {
 			require.NoError(t, err)
 			// Send Bandwidth Allocation Data
 			content := []byte("content")
-			pba, err := testbwagreement.GeneratePayerBandwidthAllocation(tt.action, satID1, upID, time.Hour)
+			pba, err := testbwagreement.GeneratePayerBandwidthAllocation(satdb.UplinkDB(), tt.action, satID1, upID, time.Hour)
 			require.NoError(t, err)
 			rba, err := testbwagreement.GenerateRenterBandwidthAllocation(pba, snID.ID, upID, int64(len(content)))
 			require.NoError(t, err)

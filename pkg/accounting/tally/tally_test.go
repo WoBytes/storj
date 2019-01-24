@@ -15,6 +15,7 @@ import (
 	"storj.io/storj/pkg/bwagreement/testbwagreement"
 	"storj.io/storj/pkg/pb"
 	"storj.io/storj/pkg/piecestore/psserver/psdb"
+	"storj.io/storj/satellite"
 )
 
 func runPlanet(t *testing.T, f func(context.Context, *testplanet.Planet)) {
@@ -40,7 +41,8 @@ func TestQueryNoAgreements(t *testing.T) {
 func TestQueryWithBw(t *testing.T) {
 	runPlanet(t, func(ctx context.Context, planet *testplanet.Planet) {
 		tally := planet.Satellites[0].Accounting.Tally
-		makeBWAs(ctx, t, planet)
+		db := planet.Satellites[0].DB
+		makeBWAs(ctx, t, db, planet)
 		//check the db
 		tallyEnd, bwTotals, err := tally.QueryBW(ctx)
 		require.NoError(t, err)
@@ -57,7 +59,7 @@ func TestQueryWithBw(t *testing.T) {
 	})
 }
 
-func makeBWAs(ctx context.Context, t *testing.T, planet *testplanet.Planet) {
+func makeBWAs(ctx context.Context, t *testing.T, db satellite.DB, planet *testplanet.Planet) {
 	satID := planet.Satellites[0].Identity
 	upID := planet.Uplinks[0].Identity
 	snID := planet.StorageNodes[0].Identity
@@ -66,7 +68,7 @@ func makeBWAs(ctx context.Context, t *testing.T, planet *testplanet.Planet) {
 		pb.BandwidthAction_GET_AUDIT, pb.BandwidthAction_GET_REPAIR, pb.BandwidthAction_PUT_REPAIR}
 	agreements := make([]*psdb.Agreement, len(actions))
 	for i, action := range actions {
-		pba, err := testbwagreement.GeneratePayerBandwidthAllocation(action, satID, upID, time.Hour)
+		pba, err := testbwagreement.GeneratePayerBandwidthAllocation(db.UplinkDB(), action, satID, upID, time.Hour)
 		require.NoError(t, err)
 		rba, err := testbwagreement.GenerateRenterBandwidthAllocation(pba, snID.ID, upID, 1000)
 		require.NoError(t, err)
