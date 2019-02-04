@@ -32,8 +32,8 @@ type Server struct {
 
 // Agreement is a struct that contains a uplinks agreement info
 type Agreement struct {
-	Agreement []byte // uplink id
-	Signature []byte // uplink public key
+	Id        []byte // uplink id
+	PublicKey []byte // uplink public key
 	CreatedAt time.Time
 }
 

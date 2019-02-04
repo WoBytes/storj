@@ -28,8 +28,8 @@ func TestUplinkdb(t *testing.T) {
 func testDatabase(ctx context.Context, t *testing.T, upldb uplinkdb.DB) {
 	//testing variables
 	uplinkInfo := &uplinkdb.Agreement{
-		Agreement: []byte("IamUplinkID"),
-		Signature: []byte("IamUplinkPublicKey"),
+		Id:        []byte("IamUplinkID"),
+		PublicKey: []byte("IamUplinkPublicKey"),
 	}
 
 	serialNum, err := uuid.New()
@@ -43,7 +43,7 @@ func testDatabase(ctx context.Context, t *testing.T, upldb uplinkdb.DB) {
 	{ // Get the corresponding Public key for the serialnum
 		agreement, err := upldb.GetSignature(ctx, serialNum.String())
 		assert.NoError(t, err)
-		assert.EqualValues(t, uplinkInfo.Agreement, agreement.Agreement)
-		assert.EqualValues(t, uplinkInfo.Signature, agreement.Signature)
+		assert.EqualValues(t, uplinkInfo.Id, agreement.Id)
+		assert.EqualValues(t, uplinkInfo.PublicKey, agreement.PublicKey)
 	}
 }

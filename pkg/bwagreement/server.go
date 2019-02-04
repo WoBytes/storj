@@ -128,7 +128,7 @@ func (s *Server) verifySignature(ctx context.Context, rba *pb.RenterBandwidthAll
 		return Error.New("Failed to unmarshal PayerBandwidthAllocation: %+v", err)
 	}
 
-	pubkey, err := x509.ParsePKIXPublicKey(uplinkInfo.Signature)
+	pubkey, err := x509.ParsePKIXPublicKey(uplinkInfo.PublicKey)
 	if err != nil {
 		return Error.New("Failed to extract Public Key from RenterBandwidthAllocation: %+v", err)
 	}
