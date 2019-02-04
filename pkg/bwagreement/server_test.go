@@ -64,7 +64,7 @@ func testDatabase(ctx context.Context, t *testing.T, db satellite.DB) {
 	assert.NoError(t, err)
 	satID, err := testidentity.NewTestIdentity(ctx)
 	assert.NoError(t, err)
-	satellite := bwagreement.NewServer(db.BandwidthAgreement(), db.UplinkDB(), zap.NewNop(), satID.ID)
+	satellite := bwagreement.NewServer(db.BandwidthAgreement(), db.UplinkDB(), satID.Leaf.PublicKey.(*ecdsa.PublicKey), zap.NewNop(), satID.ID)
 
 	{ // TestSameSerialNumberBandwidthAgreements
 		pbaFile1, err := testbwagreement.GeneratePayerBandwidthAllocation(db.UplinkDB(), pb.BandwidthAction_GET, satID, upID, time.Hour)
@@ -216,7 +216,7 @@ func testDatabase(ctx context.Context, t *testing.T, db satellite.DB) {
 			manipSignature := GetSignature(t, &manipRBA, manipPrivKey)
 			// Using self created signature + public key
 			reply, err := callBWA(ctxSN1, t, satellite, manipSignature, &manipRBA, manipCerts)
-			assert.True(t, auth.ErrSigner.Has(err) && pb.ErrRenter.Has(err), err.Error())
+			assert.True(t, pb.ErrRenter.Has(err), err.Error())
 			assert.Equal(t, pb.AgreementsSummary_REJECTED, reply.Status)
 		}
 
@@ -229,7 +229,7 @@ func testDatabase(ctx context.Context, t *testing.T, db satellite.DB) {
 			manipSignature := GetSignature(t, &manipRBA, manipPrivKey)
 			// Using self created signature + public key
 			reply, err := callBWA(ctxSN1, t, satellite, manipSignature, &manipRBA, manipCerts)
-			assert.True(t, auth.ErrVerify.Has(err) && pb.ErrPayer.Has(err), err.Error())
+			assert.True(t, auth.ErrVerify.Has(err) && pb.ErrRenter.Has(err), err.Error())
 			assert.Equal(t, pb.AgreementsSummary_REJECTED, reply.Status)
 		}
 
@@ -244,7 +244,7 @@ func testDatabase(ctx context.Context, t *testing.T, db satellite.DB) {
 			manipSignature = GetSignature(t, &manipRBA, manipPrivKey)
 			// Using self created Payer and Renter bwagreement signatures
 			reply, err := callBWA(ctxSN1, t, satellite, manipSignature, &manipRBA, manipCerts)
-			assert.True(t, auth.ErrVerify.Has(err) && pb.ErrPayer.Has(err), err.Error())
+			assert.True(t, auth.ErrVerify.Has(err) && pb.ErrRenter.Has(err), err.Error())
 			assert.Equal(t, pb.AgreementsSummary_REJECTED, reply.Status)
 		}
 
@@ -260,7 +260,7 @@ func testDatabase(ctx context.Context, t *testing.T, db satellite.DB) {
 			manipSignature = GetSignature(t, &manipRBA, manipPrivKey)
 			// Using self created Payer and Renter bwagreement signatures
 			reply, err := callBWA(ctxSN1, t, satellite, manipSignature, &manipRBA, manipCerts)
-			assert.True(t, auth.ErrSigner.Has(err) && pb.ErrPayer.Has(err), err.Error())
+			assert.True(t, pb.ErrRenter.Has(err), err.Error())
 			assert.Equal(t, pb.AgreementsSummary_REJECTED, reply.Status)
 		}
 

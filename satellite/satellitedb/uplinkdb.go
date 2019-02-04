@@ -20,7 +20,7 @@ func (b *uplinkDB) CreateAgreement(ctx context.Context, serialNum string, agreem
 		ctx,
 		dbx.UplinkDB_Signature(agreement.PublicKey),
 		dbx.UplinkDB_Serialnum(serialNum),
-		dbx.UplinkDB_Data(agreement.Id),
+		dbx.UplinkDB_Data(agreement.ID),
 	)
 	return err
 }
@@ -35,7 +35,7 @@ func (b *uplinkDB) GetAgreements(ctx context.Context) ([]uplinkdb.Agreement, err
 	for i, entry := range rows {
 		agreement := &agreements[i]
 		agreement.PublicKey = entry.Signature
-		agreement.Id = entry.Data
+		agreement.ID = entry.Data
 		agreement.CreatedAt = entry.CreatedAt
 	}
 	return agreements, nil
@@ -48,7 +48,7 @@ func (b *uplinkDB) GetPublicKey(ctx context.Context, serialnum string) (*uplinkd
 	}
 
 	return &uplinkdb.Agreement{
-		Id:        dbxInfo.Data,      // Uplink ID
+		ID:        dbxInfo.Data,      // Uplink ID
 		PublicKey: dbxInfo.Signature, // Uplink Public Key
 	}, nil
 }
@@ -63,7 +63,7 @@ func (b *uplinkDB) GetAgreementsSince(ctx context.Context, since time.Time) ([]u
 	for i, entry := range rows {
 		agreement := &agreements[i]
 		agreement.PublicKey = entry.Signature
-		agreement.Id = entry.Data
+		agreement.ID = entry.Data
 		agreement.CreatedAt = entry.CreatedAt
 	}
 	return agreements, nil

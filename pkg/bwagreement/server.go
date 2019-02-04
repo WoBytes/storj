@@ -5,6 +5,7 @@ package bwagreement
 
 import (
 	"context"
+	"crypto"
 	"crypto/ecdsa"
 	"crypto/x509"
 	"strings"
@@ -58,14 +59,15 @@ type DB interface {
 type Server struct {
 	db       DB
 	uplinkdb uplinkdb.DB
+	pkey     crypto.PublicKey
 	NodeID   storj.NodeID
 	logger   *zap.Logger
 }
 
 // NewServer creates instance of Server
-func NewServer(db DB, upldb uplinkdb.DB, logger *zap.Logger, nodeID storj.NodeID) *Server {
+func NewServer(db DB, upldb uplinkdb.DB, pkey crypto.PublicKey, logger *zap.Logger, nodeID storj.NodeID) *Server {
 	// TODO: reorder arguments, rename logger -> log
-	return &Server{db: db, uplinkdb: upldb, logger: logger, NodeID: nodeID}
+	return &Server{db: db, uplinkdb: upldb, pkey: pkey, logger: logger, NodeID: nodeID}
 }
 
 // Close closes resources
@@ -91,14 +93,6 @@ func (s *Server) BandwidthAgreements(ctx context.Context, rba *pb.RenterBandwidt
 	exp := time.Unix(pba.GetExpirationUnixSec(), 0).UTC()
 	if exp.Before(time.Now().UTC()) {
 		return reply, pb.ErrPayer.Wrap(auth.ErrExpired.New("%v vs %v", exp, time.Now().UTC()))
-	}
-	//verify message crypto
-	if err := auth.VerifyMsg(rba, pba.UplinkId); err != nil {
-		return reply, pb.ErrRenter.Wrap(err)
-	}
-
-	if err := auth.VerifyMsg(&pba, pba.SatelliteId); err != nil {
-		return reply, pb.ErrPayer.Wrap(err)
 	}
 
 	if err = s.verifySignature(ctx, rba); err != nil {
@@ -141,36 +135,31 @@ func (s *Server) verifySignature(ctx context.Context, rba *pb.RenterBandwidthAll
 
 	signatureLength := k.Curve.Params().P.BitLen() / 8
 	if len(rba.GetSignature()) < signatureLength {
-		return Error.New("Invalid Renter's Signature Length")
+		return pb.ErrRenter.Wrap(auth.ErrSigLen.New("%d vs %d", len(rba.GetSignature()), signatureLength))
 	}
 
 	// verify Renter's (uplink) signature
-	rbad := rba
+	rbad := *rba
 	rbad.SetSignature(nil)
 	rbad.SetCerts(nil)
-	rbadBytes, err := proto.Marshal(rbad)
+	rbadBytes, err := proto.Marshal(&rbad)
 	if err != nil {
 		return Error.New("marshalling error: %+v", err)
 	}
 
 	if ok := cryptopasta.Verify(rbadBytes, rba.GetSignature(), k); !ok {
-		return Error.New("Failed to verify Renter's Signature")
+		return pb.ErrRenter.Wrap(auth.ErrVerify.New("%+v", ok))
 	}
 
-	// retrieve satellite public key
-	pi, err := identity.PeerIdentityFromContext(ctx)
-	if err != nil {
-		return err
-	}
-
-	k, ok = pi.Leaf.PublicKey.(*ecdsa.PublicKey)
+	// satellite public key
+	k, ok = s.pkey.(*ecdsa.PublicKey)
 	if !ok {
-		return peertls.ErrUnsupportedKey.New("%T", pi.Leaf.PublicKey)
+		return peertls.ErrUnsupportedKey.New("%T", s.pkey)
 	}
 
 	signatureLength = k.Curve.Params().P.BitLen() / 8
 	if len(pba.GetSignature()) < signatureLength {
-		return Error.New("Inavalid Payer's Signature Length")
+		return pb.ErrPayer.Wrap(auth.ErrSigLen.New("%d vs %d", len(pba.GetSignature()), signatureLength))
 	}
 
 	// verify Payer's (satellite) signature
@@ -183,7 +172,7 @@ func (s *Server) verifySignature(ctx context.Context, rba *pb.RenterBandwidthAll
 	}
 
 	if ok := cryptopasta.Verify(pbadBytes, pba.GetSignature(), k); !ok {
-		return Error.New("Failed to verify Payer's Signature")
+		return pb.ErrPayer.Wrap(auth.ErrVerify.New("%+v", ok))
 	}
 	return nil
 }
