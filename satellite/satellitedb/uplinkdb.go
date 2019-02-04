@@ -41,7 +41,7 @@ func (b *uplinkDB) GetAgreements(ctx context.Context) ([]uplinkdb.Agreement, err
 	return agreements, nil
 }
 
-func (b *uplinkDB) GetSignature(ctx context.Context, serialnum string) (*uplinkdb.Agreement, error) {
+func (b *uplinkDB) GetPublicKey(ctx context.Context, serialnum string) (*uplinkdb.Agreement, error) {
 	dbxInfo, err := b.db.Get_UplinkDB_By_Serialnum(ctx, dbx.UplinkDB_Serialnum(serialnum))
 	if err != nil {
 		return &uplinkdb.Agreement{}, err

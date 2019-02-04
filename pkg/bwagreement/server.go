@@ -123,7 +123,7 @@ func (s *Server) verifySignature(ctx context.Context, rba *pb.RenterBandwidthAll
 	pba := rba.GetPayerAllocation()
 
 	// Get renter's public key from uplink agreement db
-	uplinkInfo, err := s.uplinkdb.GetSignature(ctx, pba.GetSerialNumber())
+	uplinkInfo, err := s.uplinkdb.GetPublicKey(ctx, pba.GetSerialNumber())
 	if err != nil {
 		return Error.New("Failed to unmarshal PayerBandwidthAllocation: %+v", err)
 	}
@@ -147,6 +147,7 @@ func (s *Server) verifySignature(ctx context.Context, rba *pb.RenterBandwidthAll
 	// verify Renter's (uplink) signature
 	rbad := rba
 	rbad.SetSignature(nil)
+	rbad.SetCerts(nil)
 	rbadBytes, err := proto.Marshal(rbad)
 	if err != nil {
 		return Error.New("marshalling error: %+v", err)
@@ -175,6 +176,7 @@ func (s *Server) verifySignature(ctx context.Context, rba *pb.RenterBandwidthAll
 	// verify Payer's (satellite) signature
 	pbad := pba
 	pbad.SetSignature(nil)
+	pbad.SetCerts(nil)
 	pbadBytes, err := proto.Marshal(&pbad)
 	if err != nil {
 		return Error.New("marshalling error: %+v", err)
