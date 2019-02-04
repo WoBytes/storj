@@ -97,18 +97,12 @@ func (s *Server) BandwidthAgreements(ctx context.Context, rba *pb.RenterBandwidt
 		return reply, pb.ErrRenter.Wrap(err)
 	}
 
-	// Get renter's public key from stored uplinkdb agreement table
-	uplinkInfo, err := s.uplinkdb.GetSignature(ctx, pba.GetSerialNumber())
-	if err != nil {
-		return nil, err
-	}
-
-	//If all is good, the signature bytes passed (via pba, as part of bw agreement) and
-	//read from uplinkdb table should be SAME. That is why
-	//copy the uplink's pub key from the uplinkdb table.
-	pba.Signature = uplinkInfo.Signature
 	if err := auth.VerifyMsg(&pba, pba.SatelliteId); err != nil {
 		return reply, pb.ErrPayer.Wrap(err)
+	}
+
+	if err = s.verifySignature(ctx, rba); err != nil {
+		return reply, err
 	}
 
 	//save and return rersults

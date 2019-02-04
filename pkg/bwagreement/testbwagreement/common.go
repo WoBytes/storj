@@ -5,9 +5,13 @@ package testbwagreement
 
 import (
 	"context"
+	"crypto"
+	"crypto/ecdsa"
+	"crypto/x509"
 	"time"
 
 	"github.com/skyrings/skyring-common/tools/uuid"
+	"github.com/zeebo/errs"
 
 	"storj.io/storj/pkg/auth"
 	"storj.io/storj/pkg/identity"
@@ -36,8 +40,14 @@ func GeneratePayerBandwidthAllocation(upldb uplinkdb.DB, action pb.BandwidthActi
 		return nil, err
 	}
 
+	// retrieve uplink's pub key
+	pubbytes, err := getUplinkPubKey(upID.Key)
+	if err != nil {
+		return nil, errs.New("Uplink Private Key is not a valid *ecdsa.PrivateKey")
+	}
+
 	// store the corresponding uplink's id and public key into uplinkDB db
-	err = upldb.CreateAgreement(context.Background(), serialNum.String(), uplinkdb.Agreement{Agreement: upID.ID.Bytes(), Signature: pba.Signature})
+	err = upldb.CreateAgreement(context.Background(), serialNum.String(), uplinkdb.Agreement{Agreement: upID.ID.Bytes(), Signature: pubbytes})
 	if err != nil {
 		return nil, err
 	}
@@ -54,4 +64,21 @@ func GenerateRenterBandwidthAllocation(pba *pb.PayerBandwidthAllocation, storage
 	}
 	// Combine Signature and Data for RenterBandwidthAllocation
 	return rba, auth.SignMessage(rba, *upID)
+}
+
+// get uplink's public key
+func getUplinkPubKey(uplinkKey crypto.PrivateKey) ([]byte, error) {
+
+	// get "Uplink" Public Key
+	uplinkKeyEcdsa, ok := uplinkKey.(*ecdsa.PrivateKey)
+	if !ok {
+		return nil, errs.New("Uplink Private Key is not a valid *ecdsa.PrivateKey")
+	}
+
+	pubbytes, err := x509.MarshalPKIXPublicKey(&uplinkKeyEcdsa.PublicKey)
+	if err != nil {
+		return nil, errs.New("Could not generate byte array from Uplink Public key: %+v", err)
+	}
+
+	return pubbytes, nil
 }
