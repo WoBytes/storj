@@ -88,9 +88,9 @@ CREATE TABLE projects (
 	PRIMARY KEY ( id )
 );
 CREATE TABLE uplinkDBs (
-	signature bytea NOT NULL,
+	publickey bytea NOT NULL,
 	serialnum text NOT NULL,
-	data bytea NOT NULL,
+	id bytea NOT NULL,
 	created_at timestamp with time zone NOT NULL,
 	PRIMARY KEY ( serialnum )
 );

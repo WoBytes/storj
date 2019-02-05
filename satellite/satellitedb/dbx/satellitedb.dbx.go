@@ -9,7 +9,6 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
-	"math/rand"
 	"reflect"
 	"regexp"
 	"strconv"
@@ -19,7 +18,9 @@ import (
 	"unicode"
 
 	"github.com/lib/pq"
+
 	"github.com/mattn/go-sqlite3"
+	"math/rand"
 )
 
 // Prevent conditional imports from causing build failures
@@ -360,9 +361,9 @@ CREATE TABLE projects (
 	PRIMARY KEY ( id )
 );
 CREATE TABLE uplinkDBs (
-	signature bytea NOT NULL,
+	publickey bytea NOT NULL,
 	serialnum text NOT NULL,
-	data bytea NOT NULL,
+	id bytea NOT NULL,
 	created_at timestamp with time zone NOT NULL,
 	PRIMARY KEY ( serialnum )
 );
@@ -549,9 +550,9 @@ CREATE TABLE projects (
 	PRIMARY KEY ( id )
 );
 CREATE TABLE uplinkDBs (
-	signature BLOB NOT NULL,
+	publickey BLOB NOT NULL,
 	serialnum TEXT NOT NULL,
-	data BLOB NOT NULL,
+	id BLOB NOT NULL,
 	created_at TIMESTAMP NOT NULL,
 	PRIMARY KEY ( serialnum )
 );
@@ -1927,9 +1928,9 @@ func (f Project_CreatedAt_Field) value() interface{} {
 func (Project_CreatedAt_Field) _Column() string { return "created_at" }
 
 type UplinkDB struct {
-	Signature []byte
+	Publickey []byte
 	Serialnum string
-	Data      []byte
+	Id        []byte
 	CreatedAt time.Time
 }
 
@@ -1938,24 +1939,24 @@ func (UplinkDB) _Table() string { return "uplinkDBs" }
 type UplinkDB_Update_Fields struct {
 }
 
-type UplinkDB_Signature_Field struct {
+type UplinkDB_Publickey_Field struct {
 	_set   bool
 	_null  bool
 	_value []byte
 }
 
-func UplinkDB_Signature(v []byte) UplinkDB_Signature_Field {
-	return UplinkDB_Signature_Field{_set: true, _value: v}
+func UplinkDB_Publickey(v []byte) UplinkDB_Publickey_Field {
+	return UplinkDB_Publickey_Field{_set: true, _value: v}
 }
 
-func (f UplinkDB_Signature_Field) value() interface{} {
+func (f UplinkDB_Publickey_Field) value() interface{} {
 	if !f._set || f._null {
 		return nil
 	}
 	return f._value
 }
 
-func (UplinkDB_Signature_Field) _Column() string { return "signature" }
+func (UplinkDB_Publickey_Field) _Column() string { return "publickey" }
 
 type UplinkDB_Serialnum_Field struct {
 	_set   bool
@@ -1976,24 +1977,24 @@ func (f UplinkDB_Serialnum_Field) value() interface{} {
 
 func (UplinkDB_Serialnum_Field) _Column() string { return "serialnum" }
 
-type UplinkDB_Data_Field struct {
+type UplinkDB_Id_Field struct {
 	_set   bool
 	_null  bool
 	_value []byte
 }
 
-func UplinkDB_Data(v []byte) UplinkDB_Data_Field {
-	return UplinkDB_Data_Field{_set: true, _value: v}
+func UplinkDB_Id(v []byte) UplinkDB_Id_Field {
+	return UplinkDB_Id_Field{_set: true, _value: v}
 }
 
-func (f UplinkDB_Data_Field) value() interface{} {
+func (f UplinkDB_Id_Field) value() interface{} {
 	if !f._set || f._null {
 		return nil
 	}
 	return f._value
 }
 
-func (UplinkDB_Data_Field) _Column() string { return "data" }
+func (UplinkDB_Id_Field) _Column() string { return "id" }
 
 type UplinkDB_CreatedAt_Field struct {
 	_set   bool
@@ -2976,24 +2977,24 @@ func (obj *postgresImpl) Create_BucketInfo(ctx context.Context,
 }
 
 func (obj *postgresImpl) Create_UplinkDB(ctx context.Context,
-	uplinkDB_signature UplinkDB_Signature_Field,
+	uplinkDB_publickey UplinkDB_Publickey_Field,
 	uplinkDB_serialnum UplinkDB_Serialnum_Field,
-	uplinkDB_data UplinkDB_Data_Field) (
+	uplinkDB_id UplinkDB_Id_Field) (
 	uplinkDB *UplinkDB, err error) {
 
 	__now := obj.db.Hooks.Now().UTC()
-	__signature_val := uplinkDB_signature.value()
+	__publickey_val := uplinkDB_publickey.value()
 	__serialnum_val := uplinkDB_serialnum.value()
-	__data_val := uplinkDB_data.value()
+	__id_val := uplinkDB_id.value()
 	__created_at_val := __now
 
-	var __embed_stmt = __sqlbundle_Literal("INSERT INTO uplinkDBs ( signature, serialnum, data, created_at ) VALUES ( ?, ?, ?, ? ) RETURNING uplinkDBs.signature, uplinkDBs.serialnum, uplinkDBs.data, uplinkDBs.created_at")
+	var __embed_stmt = __sqlbundle_Literal("INSERT INTO uplinkDBs ( publickey, serialnum, id, created_at ) VALUES ( ?, ?, ?, ? ) RETURNING uplinkDBs.publickey, uplinkDBs.serialnum, uplinkDBs.id, uplinkDBs.created_at")
 
 	var __stmt = __sqlbundle_Render(obj.dialect, __embed_stmt)
-	obj.logStmt(__stmt, __signature_val, __serialnum_val, __data_val, __created_at_val)
+	obj.logStmt(__stmt, __publickey_val, __serialnum_val, __id_val, __created_at_val)
 
 	uplinkDB = &UplinkDB{}
-	err = obj.driver.QueryRow(__stmt, __signature_val, __serialnum_val, __data_val, __created_at_val).Scan(&uplinkDB.Signature, &uplinkDB.Serialnum, &uplinkDB.Data, &uplinkDB.CreatedAt)
+	err = obj.driver.QueryRow(__stmt, __publickey_val, __serialnum_val, __id_val, __created_at_val).Scan(&uplinkDB.Publickey, &uplinkDB.Serialnum, &uplinkDB.Id, &uplinkDB.CreatedAt)
 	if err != nil {
 		return nil, obj.makeErr(err)
 	}
@@ -3857,7 +3858,7 @@ func (obj *postgresImpl) Get_UplinkDB_By_Serialnum(ctx context.Context,
 	uplinkDB_serialnum UplinkDB_Serialnum_Field) (
 	uplinkDB *UplinkDB, err error) {
 
-	var __embed_stmt = __sqlbundle_Literal("SELECT uplinkDBs.signature, uplinkDBs.serialnum, uplinkDBs.data, uplinkDBs.created_at FROM uplinkDBs WHERE uplinkDBs.serialnum = ?")
+	var __embed_stmt = __sqlbundle_Literal("SELECT uplinkDBs.publickey, uplinkDBs.serialnum, uplinkDBs.id, uplinkDBs.created_at FROM uplinkDBs WHERE uplinkDBs.serialnum = ?")
 
 	var __values []interface{}
 	__values = append(__values, uplinkDB_serialnum.value())
@@ -3866,7 +3867,7 @@ func (obj *postgresImpl) Get_UplinkDB_By_Serialnum(ctx context.Context,
 	obj.logStmt(__stmt, __values...)
 
 	uplinkDB = &UplinkDB{}
-	err = obj.driver.QueryRow(__stmt, __values...).Scan(&uplinkDB.Signature, &uplinkDB.Serialnum, &uplinkDB.Data, &uplinkDB.CreatedAt)
+	err = obj.driver.QueryRow(__stmt, __values...).Scan(&uplinkDB.Publickey, &uplinkDB.Serialnum, &uplinkDB.Id, &uplinkDB.CreatedAt)
 	if err != nil {
 		return nil, obj.makeErr(err)
 	}
@@ -3878,7 +3879,7 @@ func (obj *postgresImpl) Limited_UplinkDB(ctx context.Context,
 	limit int, offset int64) (
 	rows []*UplinkDB, err error) {
 
-	var __embed_stmt = __sqlbundle_Literal("SELECT uplinkDBs.signature, uplinkDBs.serialnum, uplinkDBs.data, uplinkDBs.created_at FROM uplinkDBs LIMIT ? OFFSET ?")
+	var __embed_stmt = __sqlbundle_Literal("SELECT uplinkDBs.publickey, uplinkDBs.serialnum, uplinkDBs.id, uplinkDBs.created_at FROM uplinkDBs LIMIT ? OFFSET ?")
 
 	var __values []interface{}
 	__values = append(__values)
@@ -3896,7 +3897,7 @@ func (obj *postgresImpl) Limited_UplinkDB(ctx context.Context,
 
 	for __rows.Next() {
 		uplinkDB := &UplinkDB{}
-		err = __rows.Scan(&uplinkDB.Signature, &uplinkDB.Serialnum, &uplinkDB.Data, &uplinkDB.CreatedAt)
+		err = __rows.Scan(&uplinkDB.Publickey, &uplinkDB.Serialnum, &uplinkDB.Id, &uplinkDB.CreatedAt)
 		if err != nil {
 			return nil, obj.makeErr(err)
 		}
@@ -3912,7 +3913,7 @@ func (obj *postgresImpl) Limited_UplinkDB(ctx context.Context,
 func (obj *postgresImpl) All_UplinkDB(ctx context.Context) (
 	rows []*UplinkDB, err error) {
 
-	var __embed_stmt = __sqlbundle_Literal("SELECT uplinkDBs.signature, uplinkDBs.serialnum, uplinkDBs.data, uplinkDBs.created_at FROM uplinkDBs")
+	var __embed_stmt = __sqlbundle_Literal("SELECT uplinkDBs.publickey, uplinkDBs.serialnum, uplinkDBs.id, uplinkDBs.created_at FROM uplinkDBs")
 
 	var __values []interface{}
 	__values = append(__values)
@@ -3928,7 +3929,7 @@ func (obj *postgresImpl) All_UplinkDB(ctx context.Context) (
 
 	for __rows.Next() {
 		uplinkDB := &UplinkDB{}
-		err = __rows.Scan(&uplinkDB.Signature, &uplinkDB.Serialnum, &uplinkDB.Data, &uplinkDB.CreatedAt)
+		err = __rows.Scan(&uplinkDB.Publickey, &uplinkDB.Serialnum, &uplinkDB.Id, &uplinkDB.CreatedAt)
 		if err != nil {
 			return nil, obj.makeErr(err)
 		}
@@ -3945,7 +3946,7 @@ func (obj *postgresImpl) All_UplinkDB_By_CreatedAt_Greater(ctx context.Context,
 	uplinkDB_created_at_greater UplinkDB_CreatedAt_Field) (
 	rows []*UplinkDB, err error) {
 
-	var __embed_stmt = __sqlbundle_Literal("SELECT uplinkDBs.signature, uplinkDBs.serialnum, uplinkDBs.data, uplinkDBs.created_at FROM uplinkDBs WHERE uplinkDBs.created_at > ?")
+	var __embed_stmt = __sqlbundle_Literal("SELECT uplinkDBs.publickey, uplinkDBs.serialnum, uplinkDBs.id, uplinkDBs.created_at FROM uplinkDBs WHERE uplinkDBs.created_at > ?")
 
 	var __values []interface{}
 	__values = append(__values, uplinkDB_created_at_greater.value())
@@ -3961,7 +3962,7 @@ func (obj *postgresImpl) All_UplinkDB_By_CreatedAt_Greater(ctx context.Context,
 
 	for __rows.Next() {
 		uplinkDB := &UplinkDB{}
-		err = __rows.Scan(&uplinkDB.Signature, &uplinkDB.Serialnum, &uplinkDB.Data, &uplinkDB.CreatedAt)
+		err = __rows.Scan(&uplinkDB.Publickey, &uplinkDB.Serialnum, &uplinkDB.Id, &uplinkDB.CreatedAt)
 		if err != nil {
 			return nil, obj.makeErr(err)
 		}
@@ -5255,23 +5256,23 @@ func (obj *sqlite3Impl) Create_BucketInfo(ctx context.Context,
 }
 
 func (obj *sqlite3Impl) Create_UplinkDB(ctx context.Context,
-	uplinkDB_signature UplinkDB_Signature_Field,
+	uplinkDB_publickey UplinkDB_Publickey_Field,
 	uplinkDB_serialnum UplinkDB_Serialnum_Field,
-	uplinkDB_data UplinkDB_Data_Field) (
+	uplinkDB_id UplinkDB_Id_Field) (
 	uplinkDB *UplinkDB, err error) {
 
 	__now := obj.db.Hooks.Now().UTC()
-	__signature_val := uplinkDB_signature.value()
+	__publickey_val := uplinkDB_publickey.value()
 	__serialnum_val := uplinkDB_serialnum.value()
-	__data_val := uplinkDB_data.value()
+	__id_val := uplinkDB_id.value()
 	__created_at_val := __now
 
-	var __embed_stmt = __sqlbundle_Literal("INSERT INTO uplinkDBs ( signature, serialnum, data, created_at ) VALUES ( ?, ?, ?, ? )")
+	var __embed_stmt = __sqlbundle_Literal("INSERT INTO uplinkDBs ( publickey, serialnum, id, created_at ) VALUES ( ?, ?, ?, ? )")
 
 	var __stmt = __sqlbundle_Render(obj.dialect, __embed_stmt)
-	obj.logStmt(__stmt, __signature_val, __serialnum_val, __data_val, __created_at_val)
+	obj.logStmt(__stmt, __publickey_val, __serialnum_val, __id_val, __created_at_val)
 
-	__res, err := obj.driver.Exec(__stmt, __signature_val, __serialnum_val, __data_val, __created_at_val)
+	__res, err := obj.driver.Exec(__stmt, __publickey_val, __serialnum_val, __id_val, __created_at_val)
 	if err != nil {
 		return nil, obj.makeErr(err)
 	}
@@ -6139,7 +6140,7 @@ func (obj *sqlite3Impl) Get_UplinkDB_By_Serialnum(ctx context.Context,
 	uplinkDB_serialnum UplinkDB_Serialnum_Field) (
 	uplinkDB *UplinkDB, err error) {
 
-	var __embed_stmt = __sqlbundle_Literal("SELECT uplinkDBs.signature, uplinkDBs.serialnum, uplinkDBs.data, uplinkDBs.created_at FROM uplinkDBs WHERE uplinkDBs.serialnum = ?")
+	var __embed_stmt = __sqlbundle_Literal("SELECT uplinkDBs.publickey, uplinkDBs.serialnum, uplinkDBs.id, uplinkDBs.created_at FROM uplinkDBs WHERE uplinkDBs.serialnum = ?")
 
 	var __values []interface{}
 	__values = append(__values, uplinkDB_serialnum.value())
@@ -6148,7 +6149,7 @@ func (obj *sqlite3Impl) Get_UplinkDB_By_Serialnum(ctx context.Context,
 	obj.logStmt(__stmt, __values...)
 
 	uplinkDB = &UplinkDB{}
-	err = obj.driver.QueryRow(__stmt, __values...).Scan(&uplinkDB.Signature, &uplinkDB.Serialnum, &uplinkDB.Data, &uplinkDB.CreatedAt)
+	err = obj.driver.QueryRow(__stmt, __values...).Scan(&uplinkDB.Publickey, &uplinkDB.Serialnum, &uplinkDB.Id, &uplinkDB.CreatedAt)
 	if err != nil {
 		return nil, obj.makeErr(err)
 	}
@@ -6160,7 +6161,7 @@ func (obj *sqlite3Impl) Limited_UplinkDB(ctx context.Context,
 	limit int, offset int64) (
 	rows []*UplinkDB, err error) {
 
-	var __embed_stmt = __sqlbundle_Literal("SELECT uplinkDBs.signature, uplinkDBs.serialnum, uplinkDBs.data, uplinkDBs.created_at FROM uplinkDBs LIMIT ? OFFSET ?")
+	var __embed_stmt = __sqlbundle_Literal("SELECT uplinkDBs.publickey, uplinkDBs.serialnum, uplinkDBs.id, uplinkDBs.created_at FROM uplinkDBs LIMIT ? OFFSET ?")
 
 	var __values []interface{}
 	__values = append(__values)
@@ -6178,7 +6179,7 @@ func (obj *sqlite3Impl) Limited_UplinkDB(ctx context.Context,
 
 	for __rows.Next() {
 		uplinkDB := &UplinkDB{}
-		err = __rows.Scan(&uplinkDB.Signature, &uplinkDB.Serialnum, &uplinkDB.Data, &uplinkDB.CreatedAt)
+		err = __rows.Scan(&uplinkDB.Publickey, &uplinkDB.Serialnum, &uplinkDB.Id, &uplinkDB.CreatedAt)
 		if err != nil {
 			return nil, obj.makeErr(err)
 		}
@@ -6194,7 +6195,7 @@ func (obj *sqlite3Impl) Limited_UplinkDB(ctx context.Context,
 func (obj *sqlite3Impl) All_UplinkDB(ctx context.Context) (
 	rows []*UplinkDB, err error) {
 
-	var __embed_stmt = __sqlbundle_Literal("SELECT uplinkDBs.signature, uplinkDBs.serialnum, uplinkDBs.data, uplinkDBs.created_at FROM uplinkDBs")
+	var __embed_stmt = __sqlbundle_Literal("SELECT uplinkDBs.publickey, uplinkDBs.serialnum, uplinkDBs.id, uplinkDBs.created_at FROM uplinkDBs")
 
 	var __values []interface{}
 	__values = append(__values)
@@ -6210,7 +6211,7 @@ func (obj *sqlite3Impl) All_UplinkDB(ctx context.Context) (
 
 	for __rows.Next() {
 		uplinkDB := &UplinkDB{}
-		err = __rows.Scan(&uplinkDB.Signature, &uplinkDB.Serialnum, &uplinkDB.Data, &uplinkDB.CreatedAt)
+		err = __rows.Scan(&uplinkDB.Publickey, &uplinkDB.Serialnum, &uplinkDB.Id, &uplinkDB.CreatedAt)
 		if err != nil {
 			return nil, obj.makeErr(err)
 		}
@@ -6227,7 +6228,7 @@ func (obj *sqlite3Impl) All_UplinkDB_By_CreatedAt_Greater(ctx context.Context,
 	uplinkDB_created_at_greater UplinkDB_CreatedAt_Field) (
 	rows []*UplinkDB, err error) {
 
-	var __embed_stmt = __sqlbundle_Literal("SELECT uplinkDBs.signature, uplinkDBs.serialnum, uplinkDBs.data, uplinkDBs.created_at FROM uplinkDBs WHERE uplinkDBs.created_at > ?")
+	var __embed_stmt = __sqlbundle_Literal("SELECT uplinkDBs.publickey, uplinkDBs.serialnum, uplinkDBs.id, uplinkDBs.created_at FROM uplinkDBs WHERE uplinkDBs.created_at > ?")
 
 	var __values []interface{}
 	__values = append(__values, uplinkDB_created_at_greater.value())
@@ -6243,7 +6244,7 @@ func (obj *sqlite3Impl) All_UplinkDB_By_CreatedAt_Greater(ctx context.Context,
 
 	for __rows.Next() {
 		uplinkDB := &UplinkDB{}
-		err = __rows.Scan(&uplinkDB.Signature, &uplinkDB.Serialnum, &uplinkDB.Data, &uplinkDB.CreatedAt)
+		err = __rows.Scan(&uplinkDB.Publickey, &uplinkDB.Serialnum, &uplinkDB.Id, &uplinkDB.CreatedAt)
 		if err != nil {
 			return nil, obj.makeErr(err)
 		}
@@ -7273,13 +7274,13 @@ func (obj *sqlite3Impl) getLastUplinkDB(ctx context.Context,
 	pk int64) (
 	uplinkDB *UplinkDB, err error) {
 
-	var __embed_stmt = __sqlbundle_Literal("SELECT uplinkDBs.signature, uplinkDBs.serialnum, uplinkDBs.data, uplinkDBs.created_at FROM uplinkDBs WHERE _rowid_ = ?")
+	var __embed_stmt = __sqlbundle_Literal("SELECT uplinkDBs.publickey, uplinkDBs.serialnum, uplinkDBs.id, uplinkDBs.created_at FROM uplinkDBs WHERE _rowid_ = ?")
 
 	var __stmt = __sqlbundle_Render(obj.dialect, __embed_stmt)
 	obj.logStmt(__stmt, pk)
 
 	uplinkDB = &UplinkDB{}
-	err = obj.driver.QueryRow(__stmt, pk).Scan(&uplinkDB.Signature, &uplinkDB.Serialnum, &uplinkDB.Data, &uplinkDB.CreatedAt)
+	err = obj.driver.QueryRow(__stmt, pk).Scan(&uplinkDB.Publickey, &uplinkDB.Serialnum, &uplinkDB.Id, &uplinkDB.CreatedAt)
 	if err != nil {
 		return nil, obj.makeErr(err)
 	}
@@ -7808,15 +7809,15 @@ func (rx *Rx) Create_ProjectMember(ctx context.Context,
 }
 
 func (rx *Rx) Create_UplinkDB(ctx context.Context,
-	uplinkDB_signature UplinkDB_Signature_Field,
+	uplinkDB_publickey UplinkDB_Publickey_Field,
 	uplinkDB_serialnum UplinkDB_Serialnum_Field,
-	uplinkDB_data UplinkDB_Data_Field) (
+	uplinkDB_id UplinkDB_Id_Field) (
 	uplinkDB *UplinkDB, err error) {
 	var tx *Tx
 	if tx, err = rx.getTx(ctx); err != nil {
 		return
 	}
-	return tx.Create_UplinkDB(ctx, uplinkDB_signature, uplinkDB_serialnum, uplinkDB_data)
+	return tx.Create_UplinkDB(ctx, uplinkDB_publickey, uplinkDB_serialnum, uplinkDB_id)
 
 }
 
@@ -8383,9 +8384,9 @@ type Methods interface {
 		project_member *ProjectMember, err error)
 
 	Create_UplinkDB(ctx context.Context,
-		uplinkDB_signature UplinkDB_Signature_Field,
+		uplinkDB_publickey UplinkDB_Publickey_Field,
 		uplinkDB_serialnum UplinkDB_Serialnum_Field,
-		uplinkDB_data UplinkDB_Data_Field) (
+		uplinkDB_id UplinkDB_Id_Field) (
 		uplinkDB *UplinkDB, err error)
 
 	Create_User(ctx context.Context,

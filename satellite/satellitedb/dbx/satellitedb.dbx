@@ -364,9 +364,9 @@ read all (
 model uplinkDB (
 	key serialnum
 
-	field signature  blob		//--uplink public key--//
+	field publickey  blob		//--uplink public key--//
 	field serialnum  text		//--uplink cheque ser num--//
-	field data       blob		//--uplink id RFU --//
+	field id         blob		//--uplink id RFU --//
 	field created_at timestamp ( autoinsert )
 )
 
